@@ -1,0 +1,83 @@
+# Build results
+bin/
+obj/
+out/
+[Bb]uild/
+[Ll]og/
+[Tt]emp/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.iml
+
+# OS files
+[Dd]esktop.ini
+[Tt]humbs.db
+ehthumbs.db
+*.DS_Store
+
+# Package managers
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+*.psmdcp
+
+# Cache
+*.pidb
+*.svclog
+*.scc
+
+# Azure
+*.azurePubxml
+PublishProfiles/
+*.pubxml
+*.publishproj
+
+# Others
+*.bak
+*.backup
+*.tmp
+*.temp
+*.log
+
+# Auto-generated files
+*.dll
+*.exe
+*.dbmdl
+*.pdb
+*.cache
+*.config
+*.json.user
+
+# Resharper
+_ReSharper*/
+*.DotSettings.user
+
+# Entity Framework Core
+#Migrations/
+
+# Coverage
+*.coverage
+*.coveragexml
+TestResults/
+
+# Load test results
+load-test/*-test-results.json
+load-test/*-quick-test-results.json
+load-test/*-stress-test-results.json
+load-test/*-long-test-results.json
+load-test/*-custom-test-results.json
+
+# Local settings
+appsettings.Development.json
+# Allow GitHub workflows
+!.github/workflows/
+Library/

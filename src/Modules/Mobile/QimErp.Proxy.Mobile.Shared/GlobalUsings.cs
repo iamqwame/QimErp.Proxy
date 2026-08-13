@@ -1,0 +1,13 @@
+global using System.Net.Http.Headers;
+global using System.Net.Http.Json;
+global using System.Text.Json;
+global using System.Text.Json.Serialization;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
+global using QFace.Sdk.Extensions;
+global using QimErp.Proxy.Mobile.Shared.Clients;
+global using QimErp.Proxy.Mobile.Shared.Constants;
+global using QimErp.Proxy.Mobile.Shared.Options;
