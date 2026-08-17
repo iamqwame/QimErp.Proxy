@@ -7,7 +7,7 @@ COPY src/Modules/Mobile/QimErp.Proxy.Mobile.Shared/QimErp.Proxy.Mobile.Shared.cs
 RUN dotnet restore src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj --source https://api.nuget.org/v3/index.json
 
 COPY . .
-RUN dotnet publish src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
