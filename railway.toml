@@ -1,0 +1,6 @@
+# Root Directory for all services = QimErp.Proxy (set in each service Settings).
+# Each service sets RAILWAY_DOCKERFILE_PATH in Variables:
+#   qimerp-proxy-mobile-api → src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/Dockerfile
+[build]
+builder = "DOCKERFILE"
+dockerfile = "src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/Dockerfile"

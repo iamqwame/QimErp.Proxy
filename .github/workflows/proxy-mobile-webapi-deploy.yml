@@ -1,0 +1,134 @@
+name: Deploy Proxy Mobile WebApi (Railway)
+
+on:
+  push:
+    branches: [development, main]
+    paths:
+      - 'src/Modules/Mobile/**'
+      - '.github/workflows/proxy-mobile-webapi-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy Proxy Mobile WebApi to Railway (Development)
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    concurrency:
+      group: deploy-${{ github.workflow }}-${{ vars.RAILWAY_ENVIRONMENT }}
+      cancel-in-progress: false
+    env:
+      RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_ENVIRONMENT }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_SERVICE: ${{ vars.RAILWAY_PROXY_MOBILE_WEBAPI_SERVICE }}
+      RAILWAY_DOCKERFILE_PATH: src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/Dockerfile
+      RAILWAY_TOKEN: ${{ vars.RAILWAY_TOKEN }}
+      DEPLOY_GIT_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_GIT_SHA }}
+
+      - name: Validate required settings
+        run: |
+          if [ -z "${RAILWAY_TOKEN}" ]; then
+            echo "RAILWAY_TOKEN variable is missing."
+            exit 1
+          fi
+          if [ -z "${RAILWAY_SERVICE}" ]; then
+            echo "RAILWAY_PROXY_MOBILE_WEBAPI_SERVICE variable is missing."
+            exit 1
+          fi
+          if [ -z "${RAILWAY_ENVIRONMENT}" ]; then
+            echo "RAILWAY_ENVIRONMENT variable is missing."
+            exit 1
+          fi
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore Proxy Mobile API project
+        run: dotnet restore "src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj"
+
+      - name: Build Proxy Mobile API project
+        run: dotnet build "src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj" -c Release --no-restore
+
+      - name: Deployment trigger context
+        run: |
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Deploy SHA: ${DEPLOY_GIT_SHA}"
+
+      - name: Deploy to Railway
+        run: |
+          set -euo pipefail
+          PROJECT_ARGS=()
+          if [ -n "${RAILWAY_PROJECT_ID}" ]; then
+            PROJECT_ARGS+=(--project "${RAILWAY_PROJECT_ID}")
+          fi
+          echo "Deploying service ${RAILWAY_SERVICE} to Railway environment ${RAILWAY_ENVIRONMENT}."
+          railway variable set "RAILWAY_DOCKERFILE_PATH=${RAILWAY_DOCKERFILE_PATH}" \
+            --service "${RAILWAY_SERVICE}" \
+            --environment "${RAILWAY_ENVIRONMENT}" \
+            --skip-deploys
+          railway up \
+            --service "${RAILWAY_SERVICE}" \
+            --environment "${RAILWAY_ENVIRONMENT}" \
+            "${PROJECT_ARGS[@]}" \
+            --detach
+
+          echo "Polling deployment status..."
+          for i in $(seq 1 50); do
+            STATUS="$(railway deployment list --service "${RAILWAY_SERVICE}" --environment "${RAILWAY_ENVIRONMENT}" --limit 1 --json | jq -r '.[0].status // empty')"
+            echo "Attempt ${i}/50: status=${STATUS}"
+            case "${STATUS}" in
+              SUCCESS)
+                echo "Deployment succeeded."
+                exit 0
+                ;;
+              FAILED|CRASHED|REMOVED|SKIPPED)
+                echo "Deployment ended with status ${STATUS}."
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          echo "Timed out waiting for deployment to reach a terminal state."
+          exit 1
+
+      - name: Post-deploy health check
+        run: |
+          set -euo pipefail
+          DOMAIN_JSON="$(railway domain --service "${RAILWAY_SERVICE}" --json)"
+          SERVICE_PUBLIC_URL="$(printf '%s' "${DOMAIN_JSON}" | jq -r '.domains[0] // .domain // empty')"
+
+          if [ -z "${SERVICE_PUBLIC_URL}" ]; then
+            echo "Unable to resolve public domain for ${RAILWAY_SERVICE}."
+            echo "${DOMAIN_JSON}"
+            exit 1
+          fi
+
+          HEALTH_URL="${SERVICE_PUBLIC_URL%/}/ready"
+          echo "Checking ${HEALTH_URL}"
+
+          for i in $(seq 1 10); do
+            if curl -fsS --max-time 8 "${HEALTH_URL}" > /dev/null; then
+              echo "Health check passed."
+              exit 0
+            fi
+
+            echo "Attempt ${i}/10 failed; retrying in 8s..."
+            sleep 8
+          done
+
+          echo "Health check failed after retries."
+          exit 1
