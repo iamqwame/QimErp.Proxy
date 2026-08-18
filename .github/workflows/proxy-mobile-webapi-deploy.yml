@@ -16,7 +16,7 @@ jobs:
   deploy:
     name: Deploy Proxy Mobile WebApi to Railway (Development)
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    environment: development
     concurrency:
       group: deploy-${{ github.workflow }}-${{ vars.RAILWAY_ENVIRONMENT }}
       cancel-in-progress: false
