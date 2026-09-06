@@ -60,6 +60,58 @@ public class DownstreamHttpClientHeaderTests
         captured!.Headers.Authorization!.Scheme.Should().Be("Bearer");
         captured.Headers.Authorization.Parameter.Should().Be("test-token");
         captured.Headers.GetValues("X-Correlation-Id").Should().ContainSingle("corr-123");
+        captured.Headers.Contains("X-Company-Id").Should().BeFalse();
+        captured.Headers.Contains("X-Company-Scope").Should().BeFalse();
         captured.RequestUri!.ToString().Should().Contain(MobileApiConstants.Downstream.IamMe);
+    }
+
+    [Fact]
+    public async Task GetAsync_forwards_company_id_and_scope_headers()
+    {
+        HttpRequestMessage? captured = null;
+        var handler = new Mock<HttpMessageHandler>();
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync((HttpRequestMessage request, CancellationToken _) =>
+            {
+                captured = request;
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{"data":{"ok":true},"isSuccess":true,"isFailure":false,"message":"ok","code":"200"}""",
+                        Encoding.UTF8,
+                        "application/json")
+                };
+            });
+
+        var factory = new Mock<IHttpClientFactory>();
+        factory.Setup(f => f.CreateClient(DownstreamClientNames.Iam))
+            .Returns(new HttpClient(handler.Object)
+            {
+                BaseAddress = new Uri("http://localhost:9050/")
+            });
+
+        var accessor = new HttpContextAccessor
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        accessor.HttpContext.Request.Headers.Authorization = "Bearer test-token";
+        accessor.HttpContext.Request.Headers["X-Company-Id"] = "company-a";
+        accessor.HttpContext.Request.Headers["X-Company-Scope"] = "all";
+
+        var client = new IamDownstreamClient(
+            factory.Object,
+            accessor,
+            NullLogger<IamDownstreamClient>.Instance);
+
+        var result = await client.GetMeAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        captured.Should().NotBeNull();
+        captured!.Headers.GetValues("X-Company-Id").Should().ContainSingle("company-a");
+        captured.Headers.GetValues("X-Company-Scope").Should().ContainSingle("all");
     }
 }
