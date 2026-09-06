@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="QimErp.Shared.Common" Version="3.7.8" />
+    <PackageReference Include="QimErp.Shared.Common" />
   </ItemGroup>
 
 </Project>
