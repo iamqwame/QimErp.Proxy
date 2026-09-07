@@ -91,6 +91,10 @@ public static class MobileApiConstants
         public const string Compensation = $"{Base}/compensation";
         public const string Benefits = $"{Base}/benefits";
         public const string SurveysMyResponses = $"{Base}/surveys/my-responses/page";
+        public const string SurveysAvailable = $"{Base}/surveys/available/page";
+        public const string SurveysStartResponse = $"{Base}/surveys/responses";
+        public const string SurveysSaveProgress = $"{Base}/surveys/responses/{{id}}";
+        public const string SurveysSubmitResponse = $"{Base}/surveys/responses/{{id}}/submit";
         public const string NotificationsPage = $"{Base}/notifications/page";
         public const string Feed = $"{Base}/feed";
         public const string FeedRead = $"{Base}/feed/{{newsId}}/read";
@@ -113,6 +117,10 @@ public static class MobileApiConstants
         public const string IamMyActivities = "api/tenant-activities/my";
         public const string BenefitEmployeeEnrollments = "api/hr/benefit/enrollments/employee/{0}";
         public const string SurveysMyResponsesPage = "api/hr/surveys/responses/my-responses/page";
+        public const string SurveysAvailablePage = "api/hr/surveys/available/page";
+        public const string SurveysStartResponse = "api/hr/surveys/responses";
+        public const string SurveysSaveProgress = "api/hr/surveys/responses/{0}";
+        public const string SurveysSubmitResponse = "api/hr/surveys/responses/{0}/submit";
         public const string NotificationsHistoryPage = "api/notifications/history/page";
         public const string PeopleCurrentEmployee = "api/hr/employees/me";
         public const string PeopleNewsMy = "api/hr/news/my";
