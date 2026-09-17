@@ -245,5 +245,17 @@ public abstract class DownstreamHttpClientBase(
         {
             request.Headers.TryAddWithoutValidation("X-Correlation-Id", correlationId.ToString());
         }
+
+        if (httpContext.Request.Headers.TryGetValue("X-Company-Id", out var companyId)
+            && !string.IsNullOrWhiteSpace(companyId))
+        {
+            request.Headers.TryAddWithoutValidation("X-Company-Id", companyId.ToString());
+        }
+
+        if (httpContext.Request.Headers.TryGetValue("X-Company-Scope", out var companyScope)
+            && !string.IsNullOrWhiteSpace(companyScope))
+        {
+            request.Headers.TryAddWithoutValidation("X-Company-Scope", companyScope.ToString());
+        }
     }
 }
