@@ -44,6 +44,7 @@ public static class MobileApiConstants
         public const string TimeOffHistory = $"{Base}/timeoff/history";
         public const string TimeOffMyRequests = $"{Base}/timeoff/my-requests";
         public const string TimeOffConfigured = $"{Base}/timeoff/configured";
+        public const string TimeOffSettings = $"{Base}/timeoff/settings";
         public const string TimeOffCalculate = $"{Base}/timeoff/calculate";
         public const string TimeOffTypes = $"{Base}/timeoff/types";
         public const string TimeOffRequest = $"{Base}/timeoff/request";
@@ -153,6 +154,7 @@ public static class MobileApiConstants
         public const string LeaveHistory = "api/hr/leave/timeoff/history";
         public const string LeaveMyRequests = "api/hr/leave/timeoff/my-requests";
         public const string LeaveConfigured = "api/hr/leave/timeoff/configured";
+        public const string LeaveSettings = "api/hr/leave/timeoff/settings";
         public const string LeaveCalculate = "api/hr/leave/timeoff/calculate";
         public const string LeaveTypes = "api/hr/leave-types";
         public const string LeaveRequest = "api/hr/leave/timeoff/request";

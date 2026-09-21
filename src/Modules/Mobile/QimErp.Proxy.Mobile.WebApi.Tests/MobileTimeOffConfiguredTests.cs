@@ -28,6 +28,24 @@ public class MobileTimeOffConfiguredTests
     }
 
     [Fact]
+    public async Task GetSettings_delegates_to_leave()
+    {
+        var leave = new Mock<ILeaveDownstreamClient>();
+        var payload = JsonDocument.Parse(
+            """{"allowBackdated":false,"maxFutureBookingDays":365}""").RootElement;
+        leave.Setup(x => x.GetSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.WithSuccess(payload));
+
+        var handler = new GetMobileTimeOffSettings.Handler(leave.Object);
+
+        var result = await handler.Handle(new GetMobileTimeOffSettings.Query(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Data.GetProperty("allowBackdated").GetBoolean().Should().BeFalse();
+        leave.Verify(x => x.GetSettingsAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task GetTypes_delegates_to_leave()
     {
         var leave = new Mock<ILeaveDownstreamClient>();
