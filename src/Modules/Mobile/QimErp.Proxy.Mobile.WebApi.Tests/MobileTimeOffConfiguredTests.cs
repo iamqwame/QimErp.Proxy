@@ -28,6 +28,24 @@ public class MobileTimeOffConfiguredTests
     }
 
     [Fact]
+    public async Task GetSettings_delegates_to_leave()
+    {
+        var leave = new Mock<ILeaveDownstreamClient>();
+        var payload = JsonDocument.Parse(
+            """{"allowBackdated":false,"maxFutureBookingDays":365}""").RootElement;
+        leave.Setup(x => x.GetSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.WithSuccess(payload));
+
+        var handler = new GetMobileTimeOffSettings.Handler(leave.Object);
+
+        var result = await handler.Handle(new GetMobileTimeOffSettings.Query(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Data.GetProperty("allowBackdated").GetBoolean().Should().BeFalse();
+        leave.Verify(x => x.GetSettingsAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task GetTypes_delegates_to_leave()
     {
         var leave = new Mock<ILeaveDownstreamClient>();
@@ -70,6 +88,40 @@ public class MobileTimeOffConfiguredTests
             x => x.CalculateAsync(
                 It.Is<string>(q =>
                     q.Contains(leaveTypeId.ToString()) && q.Contains("2026-08-10")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Calculate_forwards_plannedDays_and_employeeId()
+    {
+        var leave = new Mock<ILeaveDownstreamClient>();
+        var payload = JsonDocument.Parse("""{"projectedBalance":5}""").RootElement;
+        var leaveTypeId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        leave.Setup(x => x.CalculateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.WithSuccess(payload));
+
+        var handler = new CalculateMobileTimeOff.Handler(leave.Object);
+
+        var result = await handler.Handle(
+            new CalculateMobileTimeOff.Query
+            {
+                LeaveTypeId = leaveTypeId,
+                AsOfDate = new DateTime(2026, 9, 1),
+                PlannedDays = 3.5m,
+                EmployeeId = employeeId
+            },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        leave.Verify(
+            x => x.CalculateAsync(
+                It.Is<string>(q =>
+                    q.Contains(leaveTypeId.ToString())
+                    && q.Contains("2026-09-01")
+                    && q.Contains("plannedDays=3.5")
+                    && q.Contains($"employeeId={employeeId}")),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }

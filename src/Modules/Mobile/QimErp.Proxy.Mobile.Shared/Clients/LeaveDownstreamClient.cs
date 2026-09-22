@@ -6,6 +6,7 @@ public interface ILeaveDownstreamClient
     Task<Result<JsonElement>> GetHistoryAsync(CancellationToken cancellationToken = default);
     Task<Result<JsonElement>> GetMyRequestsAsync(CancellationToken cancellationToken = default);
     Task<Result<JsonElement>> GetConfiguredAsync(CancellationToken cancellationToken = default);
+    Task<Result<JsonElement>> GetSettingsAsync(CancellationToken cancellationToken = default);
     Task<Result<JsonElement>> CalculateAsync(string queryString, CancellationToken cancellationToken = default);
     Task<Result<JsonElement>> GetLeaveTypesAsync(CancellationToken cancellationToken = default);
     Task<Result<JsonElement>> GetPlannerAsync(string scope, CancellationToken cancellationToken = default);
@@ -34,6 +35,9 @@ public sealed class LeaveDownstreamClient(
 
     public Task<Result<JsonElement>> GetConfiguredAsync(CancellationToken cancellationToken = default)
         => GetRawAsync(MobileApiConstants.Downstream.LeaveConfigured, cancellationToken);
+
+    public Task<Result<JsonElement>> GetSettingsAsync(CancellationToken cancellationToken = default)
+        => GetRawAsync(MobileApiConstants.Downstream.LeaveSettings, cancellationToken);
 
     public Task<Result<JsonElement>> CalculateAsync(string queryString, CancellationToken cancellationToken = default)
         => GetRawAsync($"{MobileApiConstants.Downstream.LeaveCalculate}{queryString}", cancellationToken);
