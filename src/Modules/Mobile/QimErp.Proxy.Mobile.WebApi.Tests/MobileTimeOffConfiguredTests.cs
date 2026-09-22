@@ -91,4 +91,38 @@ public class MobileTimeOffConfiguredTests
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [Fact]
+    public async Task Calculate_forwards_plannedDays_and_employeeId()
+    {
+        var leave = new Mock<ILeaveDownstreamClient>();
+        var payload = JsonDocument.Parse("""{"projectedBalance":5}""").RootElement;
+        var leaveTypeId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        leave.Setup(x => x.CalculateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.WithSuccess(payload));
+
+        var handler = new CalculateMobileTimeOff.Handler(leave.Object);
+
+        var result = await handler.Handle(
+            new CalculateMobileTimeOff.Query
+            {
+                LeaveTypeId = leaveTypeId,
+                AsOfDate = new DateTime(2026, 9, 1),
+                PlannedDays = 3.5m,
+                EmployeeId = employeeId
+            },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        leave.Verify(
+            x => x.CalculateAsync(
+                It.Is<string>(q =>
+                    q.Contains(leaveTypeId.ToString())
+                    && q.Contains("2026-09-01")
+                    && q.Contains("plannedDays=3.5")
+                    && q.Contains($"employeeId={employeeId}")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
 }
