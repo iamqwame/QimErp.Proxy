@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
 WORKDIR /app
 
+COPY Directory.Packages.props ./
 COPY src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/
 COPY src/Modules/Mobile/QimErp.Proxy.Mobile.Shared/QimErp.Proxy.Mobile.Shared.csproj src/Modules/Mobile/QimErp.Proxy.Mobile.Shared/
 

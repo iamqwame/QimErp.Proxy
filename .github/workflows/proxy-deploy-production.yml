@@ -1,0 +1,104 @@
+name: Proxy Deploy (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Space-separated compose services to deploy. Allowed: proxy-mobile'
+        required: true
+        type: string
+        default: 'proxy-mobile'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: [self-hosted, qimerp-ci]
+    environment: production
+    permissions:
+      contents: read
+    concurrency:
+      group: qimerp-production-deploy-proxy
+      cancel-in-progress: false
+    timeout-minutes: 30
+    steps:
+      - name: Require main branch
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::Production deploys must run from main."
+            exit 1
+          fi
+
+      - name: Validate services
+        id: services
+        env:
+          SERVICES_INPUT: ${{ inputs.services }}
+          ALLOWED: proxy-mobile
+        run: |
+          set -euo pipefail
+          read -r -a requested <<< "$SERVICES_INPUT"
+          if [ "${#requested[@]}" -eq 0 ]; then
+            echo "::error::No services given. Allowed: $ALLOWED"
+            exit 1
+          fi
+          validated=()
+          for svc in "${requested[@]}"; do
+            if [[ ! "$svc" =~ ^[a-z-]+$ ]] || [[ " $ALLOWED " != *" $svc "* ]]; then
+              echo "::error::Service not allowed: $(printf '%q' "$svc"). Allowed: $ALLOWED"
+              exit 1
+            fi
+            if [[ " ${validated[*]-} " != *" $svc "* ]]; then
+              validated+=("$svc")
+            fi
+          done
+          echo "list=${validated[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy over SSH
+        id: deploy
+        env:
+          SSH_KEY: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.PRODUCTION_SSH_KNOWN_HOSTS }}
+          SERVICES: ${{ steps.services.outputs.list }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SSH_KEY" ]; then
+            echo "::error::Environment secret PRODUCTION_DEPLOY_SSH_KEY is not set."
+            exit 1
+          fi
+          if [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::Environment variable PRODUCTION_SSH_KNOWN_HOSTS is not set."
+            exit 1
+          fi
+          umask 077
+          dir="$(mktemp -d -p "$RUNNER_TEMP")"
+          trap 'rm -rf "$dir"' EXIT INT TERM
+          printf '%s\n' "$SSH_KEY" > "$dir/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$dir/known_hosts"
+          ssh -i "$dir/key" -p 2222 \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$dir/known_hosts" \
+            -o ConnectTimeout=15 \
+            qimerp@169.58.20.144 "deploy $SERVICES"
+
+      - name: Summary
+        if: always()
+        env:
+          SERVICES: ${{ steps.services.outputs.list }}
+          OUTCOME: ${{ steps.deploy.outcome }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          {
+            echo "### Proxy production deploy"
+            echo ""
+            echo "- Services: ${SERVICES:-none}"
+            echo "- Outcome: ${OUTCOME:-skipped}"
+            echo "- Commit: $SHA"
+            echo "- Triggered by: $ACTOR"
+          } >> "$GITHUB_STEP_SUMMARY"
