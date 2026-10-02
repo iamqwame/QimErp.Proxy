@@ -81,3 +81,4 @@ appsettings.Development.json
 # Allow GitHub workflows
 !.github/workflows/
 Library/
+__pycache__/
