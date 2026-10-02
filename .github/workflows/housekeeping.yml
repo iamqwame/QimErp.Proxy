@@ -1,0 +1,39 @@
+name: Housekeeping
+
+on:
+  schedule:
+    - cron: '0 3,15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  packages: write
+
+concurrency:
+  group: qimerp-housekeeping-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: Prune old runs and images
+    runs-on: [self-hosted, qimerp-ci]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Delete workflow runs older than 30 days
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_DAYS: '30'
+        run: python3 .github/scripts/prune-runs.py
+
+      - name: Keep the newest 10 mobile-api images
+        if: always()
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        with:
+          package-name: qimerp-proxy-mobile-api
+          package-type: container
+          min-versions-to-keep: 10
