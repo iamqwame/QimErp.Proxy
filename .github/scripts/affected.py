@@ -89,9 +89,12 @@ def main():
     ap.add_argument("--roots", required=True, help="glob for root .csproj files")
     ap.add_argument("--always", action="append", default=[],
                     help="path prefix whose change selects every root (repeatable)")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="glob for root .csproj files to leave out (repeatable)")
     args = ap.parse_args()
 
-    roots = sorted(glob.glob(args.roots, recursive=True))
+    excluded = {p for g in args.exclude for p in glob.glob(g, recursive=True)}
+    roots = sorted(set(glob.glob(args.roots, recursive=True)) - excluded)
     files = changed_files(args.base, args.head)
     if files is None or any(
         GLOBAL_INPUTS.search(f) or any(f.startswith(p) for p in args.always) for f in files
