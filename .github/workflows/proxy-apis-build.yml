@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/Modules/**/*.WebApi/**'
       - 'src/Modules/**/*.Shared/**'
+      - 'Directory.*.props'
       - '.github/workflows/proxy-apis-build.yml'
   workflow_dispatch:
     inputs:
@@ -23,22 +24,41 @@ permissions:
 env:
   REGISTRY: ghcr.io
 
+concurrency:
+  group: qimerp-ci-proxy-build-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, qimerp-ci]
+    timeout-minutes: 45
     env:
-      # Avoids a VBCSCompiler node-reuse deadlock when the Test step rebuilds a project the Build step already built.
       MSBUILDDISABLENODEREUSE: "1"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@3e891b0cb619bf60e2c25674b222b8940e2c1c25 # v4.1.0
-        with:
-          dotnet-version: '9.0.x'
+      - name: Install .NET 9 (user-local on Contabo)
+        run: |
+          set -euo pipefail
+          INSTALL_DIR="${HOME}/.dotnet"
+          has_sdk() { "${INSTALL_DIR}/dotnet" --list-sdks 2>/dev/null | grep '^9\.0\.' >/dev/null; }
+          if ! has_sdk; then
+            exec 9>"${HOME}/.dotnet-install.lock"
+            flock 9
+            if ! has_sdk; then
+              installer="$(mktemp -p "${RUNNER_TEMP}" dotnet-install.XXXXXX)"
+              curl -fsSL https://dot.net/v1/dotnet-install.sh -o "${installer}"
+              bash "${installer}" --channel 9.0 --install-dir "${INSTALL_DIR}"
+              rm -f "${installer}"
+            fi
+            flock -u 9
+          fi
+          echo "${INSTALL_DIR}" >> "${GITHUB_PATH}"
+          echo "DOTNET_ROOT=${INSTALL_DIR}" >> "${GITHUB_ENV}"
+          "${INSTALL_DIR}/dotnet" --info
 
       - name: Restore dependencies
         run: |
@@ -47,16 +67,15 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi/QimErp.Proxy.Mobile.WebApi.csproj -c Release --no-restore
-          dotnet build src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi.Tests/QimErp.Proxy.Mobile.WebApi.Tests.csproj -c Release --no-restore
+          dotnet build src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi.Tests/QimErp.Proxy.Mobile.WebApi.Tests.csproj -c Release --no-restore -m:3 -nodeReuse:false -p:UseSharedCompilation=false
 
       - name: Test
         run: |
-          dotnet test src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi.Tests/QimErp.Proxy.Mobile.WebApi.Tests.csproj --no-restore --verbosity normal
+          dotnet test src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi.Tests/QimErp.Proxy.Mobile.WebApi.Tests.csproj -c Release --no-build --verbosity normal
 
   build:
     name: Build & Push ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, qimerp-ci]
     needs: [test]
 
     strategy:
@@ -127,7 +146,7 @@ jobs:
 
   summary:
     name: Build Summary
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, qimerp-ci]
     needs: [build]
     if: always()
 
