@@ -1,3 +1,5 @@
+using QimErp.Proxy.Mobile.Shared.Database;
+
 var title = "QimERP Proxy Mobile API";
 var version = "v1";
 var description = "QimErp.Proxy.Mobile edge host for the Flutter ESS app. JWT-forwards to domain WebApis; no database.";
@@ -30,6 +32,10 @@ builder.Services.ConfigureHttpClientDefaults(http =>
 builder.Services.AddSwaggerDocumentation(assembly, title, version, description);
 builder.Services.AddProxyMobileShared(configuration);
 builder.Services.AddCoreServices(configuration, assembly);
+var commandStoreConnection = configuration.GetConnectionString("ProxyCommands");
+if (string.IsNullOrWhiteSpace(commandStoreConnection))
+    throw new InvalidOperationException("ConnectionStrings:ProxyCommands is required for durable mobile commands.");
+builder.Services.AddDbContextWithOutbox<ProxyCommandDbContext>(commandStoreConnection, configuration);
 
 // IAM tokens carry no employeeId claim; resolve the current employee once per
 // request from the People module instead of trusting the token.
