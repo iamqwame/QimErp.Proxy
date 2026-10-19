@@ -7,7 +7,7 @@ public sealed class ProxyCommand : GuidAuditableEntity
     public string TargetService { get; private set; } = string.Empty;
     public string Route { get; private set; } = string.Empty;
     public string Method { get; private set; } = string.Empty;
-    public string Payload { get; private set; } = string.Empty;
+    public string PayloadCiphertext { get; private set; } = string.Empty;
     public string RequestedByUserId { get; private set; } = string.Empty;
     public string Status { get; private set; } = Pending;
     public DateTime AcceptedAtUtc { get; private set; }
@@ -21,7 +21,7 @@ public sealed class ProxyCommand : GuidAuditableEntity
     private ProxyCommand() { }
 
     public static ProxyCommand Accept(
-        string tenantId, string requestedByUserId, string targetService, string route, string method, string payload)
+        string tenantId, string requestedByUserId, string targetService, string route, string method, string payloadCiphertext)
     {
         var command = new ProxyCommand
         {
@@ -31,7 +31,7 @@ public sealed class ProxyCommand : GuidAuditableEntity
             TargetService = targetService,
             Route = route,
             Method = method,
-            Payload = payload,
+            PayloadCiphertext = payloadCiphertext,
             AcceptedAtUtc = DateTime.UtcNow
         };
         command.AsActive();

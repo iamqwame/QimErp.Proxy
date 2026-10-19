@@ -13,7 +13,7 @@ using QimErp.Proxy.Mobile.Shared.Database;
 namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
 {
     [DbContext(typeof(ProxyCommandDbContext))]
-    [Migration("20261019092341_AddProxyCommandStore")]
+    [Migration("20261019225231_AddProxyCommandStore")]
     partial class AddProxyCommandStore
     {
         /// <inheritdoc />
@@ -129,7 +129,7 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Payload")
+                    b.Property<string>("PayloadCiphertext")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -828,24 +828,65 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("DeadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("EntityVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("EventType")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
-                    b.Property<bool>("IsProcessed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
-                    b.Property<DateTime>("OccurredAt")
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Payload")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Transport")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsProcessed", "OccurredAt")
-                        .HasDatabaseName("IX_OutboxMessages_IsProcessed_OccurredAt");
+                    b.HasIndex("NextAttemptAt")
+                        .HasDatabaseName("ix_outbox_ready")
+                        .HasFilter("\"ProcessedAt\" IS NULL AND \"DeadAt\" IS NULL");
+
+                    b.HasIndex("EntityId", "OccurredAt")
+                        .HasDatabaseName("ix_outbox_entity_order");
 
                     b.ToTable("OutboxMessages", (string)null);
                 });

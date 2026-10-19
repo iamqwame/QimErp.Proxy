@@ -1,4 +1,5 @@
 using QimErp.Proxy.Mobile.Shared.Database;
+using QimErp.Proxy.Mobile.Shared.Services;
 
 var title = "QimERP Proxy Mobile API";
 var version = "v1";
@@ -36,6 +37,7 @@ var commandStoreConnection = configuration.GetConnectionString("ProxyCommands");
 if (string.IsNullOrWhiteSpace(commandStoreConnection))
     throw new InvalidOperationException("ConnectionStrings:ProxyCommands is required for durable mobile commands.");
 builder.Services.AddDbContextWithOutbox<ProxyCommandDbContext>(commandStoreConnection, configuration);
+builder.Services.AddSingleton<IProxyCommandPayloadProtector, ProxyCommandPayloadProtector>();
 
 // IAM tokens carry no employeeId claim; resolve the current employee once per
 // request from the People module instead of trusting the token.

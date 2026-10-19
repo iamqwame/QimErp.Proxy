@@ -254,10 +254,20 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventType = table.Column<string>(type: "text", nullable: true),
-                    Payload = table.Column<string>(type: "text", nullable: true),
-                    OccurredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IsProcessed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    EventType = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Transport = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntityVersion = table.Column<long>(type: "bigint", nullable: false),
+                    Payload = table.Column<string>(type: "jsonb", nullable: false),
+                    OccurredAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    NextAttemptAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LockedUntil = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    LockedBy = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    Attempts = table.Column<int>(type: "integer", nullable: false),
+                    LastError = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    ProcessedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    DeadAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -272,7 +282,7 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                     TargetService = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Route = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Method = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    Payload = table.Column<string>(type: "text", nullable: false),
+                    PayloadCiphertext = table.Column<string>(type: "text", nullable: false),
                     RequestedByUserId = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     AcceptedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -536,9 +546,15 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                 columns: new[] { "TenantId", "Status" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_OutboxMessages_IsProcessed_OccurredAt",
+                name: "ix_outbox_entity_order",
                 table: "OutboxMessages",
-                columns: new[] { "IsProcessed", "OccurredAt" });
+                columns: new[] { "EntityId", "OccurredAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_outbox_ready",
+                table: "OutboxMessages",
+                column: "NextAttemptAt",
+                filter: "\"ProcessedAt\" IS NULL AND \"DeadAt\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProxyCommands_TenantId_Status_AcceptedAtUtc",
