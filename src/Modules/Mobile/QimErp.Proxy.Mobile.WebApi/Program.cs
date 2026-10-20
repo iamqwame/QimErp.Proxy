@@ -1,4 +1,5 @@
 using QimErp.Proxy.Mobile.Shared.Database;
+using QimErp.Proxy.Mobile.Shared.Security;
 using QimErp.Proxy.Mobile.Shared.Services;
 
 var title = "QimERP Proxy Mobile API";
@@ -38,6 +39,7 @@ if (string.IsNullOrWhiteSpace(commandStoreConnection))
     throw new InvalidOperationException("ConnectionStrings:ProxyCommands is required for durable mobile commands.");
 builder.Services.AddDbContextWithOutbox<ProxyCommandDbContext>(commandStoreConnection, configuration);
 builder.Services.AddSingleton<IProxyCommandPayloadProtector, ProxyCommandPayloadProtector>();
+builder.Services.AddBlindIndex(configuration);
 builder.Services.AddScoped<IProxyCommandAcceptService, ProxyCommandAcceptService>();
 
 // IAM tokens carry no employeeId claim; resolve the current employee once per

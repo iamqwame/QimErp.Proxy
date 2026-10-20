@@ -6,6 +6,8 @@ on:
     paths:
       - 'src/Modules/**'
       - 'Directory.*.props'
+      - 'local-nuget/**'
+      - 'nuget.config'
       - '.github/scripts/**'
       - '.github/workflows/proxy-apis-build.yml'
   workflow_dispatch:
