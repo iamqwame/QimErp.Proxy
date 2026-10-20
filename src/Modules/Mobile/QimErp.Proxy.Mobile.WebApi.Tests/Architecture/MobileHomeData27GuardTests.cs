@@ -4,8 +4,6 @@ using Xunit;
 namespace QimErp.Proxy.Mobile.WebApi.Tests.Architecture;
 
 /// <summary>
-/// DATA-27: mobile home composition must fan out downstream sections in one parallel batch.
-/// </summary>
 public class MobileHomeData27GuardTests
 {
     [Fact]

@@ -10,7 +10,6 @@ namespace QimErp.Proxy.Mobile.Shared.Security;
 
 public static class BlindIndexServiceCollectionExtensions
 {
-    // DATA-25: register HMAC blind index for future PII exact-lookup beachheads.
     public static IServiceCollection AddBlindIndex(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<BlindIndexOptions>(configuration.GetSection(BlindIndexOptions.SectionName));

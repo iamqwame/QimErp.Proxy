@@ -9,7 +9,6 @@ public sealed class ProxyCommand : GuidAuditableEntity
     public string Route { get; private set; } = string.Empty;
     public string Method { get; private set; } = string.Empty;
 
-    // DATA-25: command body is Sensitive — AES-GCM ciphertext only (never plaintext at rest).
     [DataClassification(DataClassification.Sensitive)]
     public string PayloadCiphertext { get; private set; } = string.Empty;
 

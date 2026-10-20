@@ -4,8 +4,6 @@ using Xunit;
 namespace QimErp.Proxy.Mobile.WebApi.Tests.Architecture;
 
 /// <summary>
-/// DATA-10: ProxyCommand Accept is unique per (TenantId, IdempotencyKey).
-/// </summary>
 public class ProxyCommandData10GuardTests
 {
     [Fact]

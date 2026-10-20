@@ -18,7 +18,6 @@ public static class GetMobileHome
         {
             var employeeId = await currentEmployeeResolver.ResolveAsync(cancellationToken);
 
-            // DATA-27: one parallel fan-out for home sections (no sequential downstream round trips).
             Task<(string Section, JsonElement? Data, bool Failed)> essHomeTask;
             if (employeeId is { } resolvedEmployeeId)
             {

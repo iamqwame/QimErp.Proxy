@@ -6,10 +6,6 @@ namespace QimErp.Proxy.Mobile.Shared.Services;
 
 public sealed record ProxyCommandAcceptResult(ProxyCommand Command, bool WasAlreadyAccepted);
 
-/// <summary>
-/// DATA-10: Accept is safe to run twice for the same (TenantId, IdempotencyKey).
-/// DATA-24: blank TenantId fails closed before any command store query.
-/// </summary>
 public interface IProxyCommandAcceptService
 {
     Task<ProxyCommandAcceptResult> AcceptAsync(
@@ -35,7 +31,6 @@ public sealed class ProxyCommandAcceptService(ProxyCommandDbContext db) : IProxy
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
-        // DATA-24: fail closed before tenant-scoped command lookup — never probe without TenantId.
         EnsureTenantId(tenantId);
         if (string.IsNullOrWhiteSpace(idempotencyKey))
             throw new ArgumentException("IdempotencyKey is required.", nameof(idempotencyKey));
@@ -53,7 +48,6 @@ public sealed class ProxyCommandAcceptService(ProxyCommandDbContext db) : IProxy
         return new ProxyCommandAcceptResult(command, WasAlreadyAccepted: false);
     }
 
-    // DATA-24: blank TenantId must never reach ProxyCommands queries.
     private static void EnsureTenantId(string tenantId)
     {
         if (string.IsNullOrWhiteSpace(tenantId))

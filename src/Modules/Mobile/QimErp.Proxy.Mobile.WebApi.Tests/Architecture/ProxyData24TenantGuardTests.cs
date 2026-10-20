@@ -4,8 +4,6 @@ using Xunit;
 namespace QimErp.Proxy.Mobile.WebApi.Tests.Architecture;
 
 /// <summary>
-/// DATA-24: ProxyCommand Accept fails closed on blank TenantId; Shared has no unguarded IQF.
-/// </summary>
 public class ProxyData24TenantGuardTests
 {
     [Fact]

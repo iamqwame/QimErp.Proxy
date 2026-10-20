@@ -4,8 +4,6 @@ using Xunit;
 namespace QimErp.Proxy.Mobile.WebApi.Tests.Architecture;
 
 /// <summary>
-/// DATA-02: Proxy is a JWT-forward BFF — downstream HTTP is gateway composition, not domain sync.
-/// </summary>
 public class ProxyGatewayData02GuardTests
 {
     [Fact]
