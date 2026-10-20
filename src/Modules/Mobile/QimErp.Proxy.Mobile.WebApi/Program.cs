@@ -38,6 +38,7 @@ if (string.IsNullOrWhiteSpace(commandStoreConnection))
     throw new InvalidOperationException("ConnectionStrings:ProxyCommands is required for durable mobile commands.");
 builder.Services.AddDbContextWithOutbox<ProxyCommandDbContext>(commandStoreConnection, configuration);
 builder.Services.AddSingleton<IProxyCommandPayloadProtector, ProxyCommandPayloadProtector>();
+builder.Services.AddScoped<IProxyCommandAcceptService, ProxyCommandAcceptService>();
 
 // IAM tokens carry no employeeId claim; resolve the current employee once per
 // request from the People module instead of trusting the token.

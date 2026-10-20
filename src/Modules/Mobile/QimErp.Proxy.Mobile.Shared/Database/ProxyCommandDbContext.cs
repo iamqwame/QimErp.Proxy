@@ -23,9 +23,14 @@ public sealed class ProxyCommandDbContext(
             builder.Property(x => x.Method).HasMaxLength(10).IsRequired();
             builder.Property(x => x.PayloadCiphertext).IsRequired();
             builder.Property(x => x.RequestedByUserId).HasMaxLength(128).IsRequired();
+            builder.Property(x => x.IdempotencyKey).HasMaxLength(128).IsRequired();
             builder.Property(x => x.Status).HasMaxLength(20).IsRequired();
             builder.Property(x => x.FailureCode).HasMaxLength(100);
             builder.HasIndex(x => new { x.TenantId, x.Status, x.AcceptedAtUtc });
+            // DATA-10: client retries with the same idempotency key return the existing command.
+            builder.HasIndex(x => new { x.TenantId, x.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("UX_ProxyCommands_TenantId_IdempotencyKey");
         });
     }
 }

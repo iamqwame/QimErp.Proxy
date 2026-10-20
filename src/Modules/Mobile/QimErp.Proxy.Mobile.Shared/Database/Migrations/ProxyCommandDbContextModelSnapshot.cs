@@ -95,6 +95,11 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<bool>("IsGlobal")
                         .HasColumnType("boolean");
 
@@ -165,6 +170,10 @@ namespace QimErp.Proxy.Mobile.Shared.Database.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ProxyCommands_TenantId_IdempotencyKey");
 
                     b.HasIndex("TenantId", "Status", "AcceptedAtUtc");
 

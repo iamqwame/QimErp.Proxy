@@ -9,6 +9,7 @@ public sealed class ProxyCommand : GuidAuditableEntity
     public string Method { get; private set; } = string.Empty;
     public string PayloadCiphertext { get; private set; } = string.Empty;
     public string RequestedByUserId { get; private set; } = string.Empty;
+    public string IdempotencyKey { get; private set; } = string.Empty;
     public string Status { get; private set; } = Pending;
     public DateTime AcceptedAtUtc { get; private set; }
     public DateTime? CompletedAtUtc { get; private set; }
@@ -21,8 +22,17 @@ public sealed class ProxyCommand : GuidAuditableEntity
     private ProxyCommand() { }
 
     public static ProxyCommand Accept(
-        string tenantId, string requestedByUserId, string targetService, string route, string method, string payloadCiphertext)
+        string tenantId,
+        string requestedByUserId,
+        string targetService,
+        string route,
+        string method,
+        string payloadCiphertext,
+        string idempotencyKey)
     {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+            throw new ArgumentException("IdempotencyKey is required.", nameof(idempotencyKey));
+
         var command = new ProxyCommand
         {
             Id = CreateId(),
@@ -32,6 +42,7 @@ public sealed class ProxyCommand : GuidAuditableEntity
             Route = route,
             Method = method,
             PayloadCiphertext = payloadCiphertext,
+            IdempotencyKey = idempotencyKey.Trim(),
             AcceptedAtUtc = DateTime.UtcNow
         };
         command.AsActive();
