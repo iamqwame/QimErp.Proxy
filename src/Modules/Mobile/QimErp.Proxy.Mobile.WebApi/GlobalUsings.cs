@@ -12,6 +12,7 @@ global using QimErp.Proxy.Mobile.Shared.Constants;
 global using QimErp.Proxy.Mobile.Shared.Contracts;
 global using QimErp.Proxy.Mobile.Shared.Extensions;
 global using QimErp.Proxy.Mobile.WebApi.Services;
+global using QimErp.Shared.Common.Diagnostics.IntegrityChecks;
 global using QimErp.Shared.Common.Extensions;
 global using QimErp.Shared.Common.Services.Auth;
 global using Serilog;

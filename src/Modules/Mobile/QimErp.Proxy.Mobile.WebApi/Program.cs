@@ -38,7 +38,10 @@ var commandStoreConnection = configuration.GetConnectionString("ProxyCommands");
 if (string.IsNullOrWhiteSpace(commandStoreConnection))
     throw new InvalidOperationException("ConnectionStrings:ProxyCommands is required for durable mobile commands.");
 builder.Services.AddDbContextWithOutbox<ProxyCommandDbContext>(commandStoreConnection, configuration);
+builder.Services.AddIntegrityCheckRunner(configuration);
+builder.Services.AddIntegrityCheck<OutboxBackstopIntegrityCheck<ProxyCommandDbContext>>();
 builder.Services.AddSingleton<IProxyCommandPayloadProtector, ProxyCommandPayloadProtector>();
+// DATA-25: BlindIndex registered; no payload lookup-hash — N/A until content-based lookup exists.
 builder.Services.AddBlindIndex(configuration);
 builder.Services.AddScoped<IProxyCommandAcceptService, ProxyCommandAcceptService>();
 
