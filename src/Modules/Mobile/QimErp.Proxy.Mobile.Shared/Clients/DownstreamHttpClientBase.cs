@@ -226,6 +226,7 @@ public abstract class DownstreamHttpClientBase(
         }
     }
 
+    // DATA-02: gateway JWT-forward only — never mint or attach X-Internal-Api-Key.
     private void ApplyCallerHeaders(HttpRequestMessage request)
     {
         var httpContext = httpContextAccessor.HttpContext;

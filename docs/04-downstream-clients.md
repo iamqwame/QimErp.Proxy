@@ -12,3 +12,9 @@ Named `IHttpClientFactory` clients registered in `AddProxyMobileShared`:
 | Workflow | `Downstream:Workflow` | approvals |
 
 Every call copies the incoming `Authorization` and `X-Correlation-Id` headers. User JWT only — never `X-Internal-Api-Key` for ESS.
+
+## DATA-02 (gateway)
+
+Proxy is an edge BFF, not a domain module. Request-path JWT-forward HTTP to owned modules is the
+approved composition pattern (see CoreHr DECISIONS note preferring Proxy/BFF over domain sync HTTP).
+Guards: `ProxyGatewayData02GuardTests` + `DownstreamHttpClientHeaderTests`.

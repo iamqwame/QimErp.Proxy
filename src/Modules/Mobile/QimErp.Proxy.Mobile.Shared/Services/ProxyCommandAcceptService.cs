@@ -8,6 +8,7 @@ public sealed record ProxyCommandAcceptResult(ProxyCommand Command, bool WasAlre
 
 /// <summary>
 /// DATA-10: Accept is safe to run twice for the same (TenantId, IdempotencyKey).
+/// DATA-24: blank TenantId fails closed before any command store query.
 /// </summary>
 public interface IProxyCommandAcceptService
 {
@@ -34,8 +35,8 @@ public sealed class ProxyCommandAcceptService(ProxyCommandDbContext db) : IProxy
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(tenantId))
-            throw new ArgumentException("TenantId is required.", nameof(tenantId));
+        // DATA-24: fail closed before tenant-scoped command lookup — never probe without TenantId.
+        EnsureTenantId(tenantId);
         if (string.IsNullOrWhiteSpace(idempotencyKey))
             throw new ArgumentException("IdempotencyKey is required.", nameof(idempotencyKey));
 
@@ -50,5 +51,12 @@ public sealed class ProxyCommandAcceptService(ProxyCommandDbContext db) : IProxy
         db.ProxyCommands.Add(command);
         await db.SaveChangesAsync(cancellationToken);
         return new ProxyCommandAcceptResult(command, WasAlreadyAccepted: false);
+    }
+
+    // DATA-24: blank TenantId must never reach ProxyCommands queries.
+    private static void EnsureTenantId(string tenantId)
+    {
+        if (string.IsNullOrWhiteSpace(tenantId))
+            throw new ArgumentException("TenantId is required.", nameof(tenantId));
     }
 }
