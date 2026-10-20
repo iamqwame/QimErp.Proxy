@@ -82,3 +82,6 @@ appsettings.Development.json
 !.github/workflows/
 Library/
 __pycache__/
+
+!local-nuget/
+!local-nuget/*.nupkg

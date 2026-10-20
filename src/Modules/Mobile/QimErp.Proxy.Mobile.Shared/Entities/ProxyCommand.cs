@@ -1,4 +1,5 @@
 using QimErp.Shared.Common.Entities;
+using QimErp.Shared.Common.Security;
 
 namespace QimErp.Proxy.Mobile.Shared.Entities;
 
@@ -7,7 +8,12 @@ public sealed class ProxyCommand : GuidAuditableEntity
     public string TargetService { get; private set; } = string.Empty;
     public string Route { get; private set; } = string.Empty;
     public string Method { get; private set; } = string.Empty;
+
+    // DATA-25: command body is Sensitive — AES-GCM ciphertext only (never plaintext at rest).
+    [DataClassification(DataClassification.Sensitive)]
     public string PayloadCiphertext { get; private set; } = string.Empty;
+
+    [DataClassification(DataClassification.Internal)]
     public string RequestedByUserId { get; private set; } = string.Empty;
     public string IdempotencyKey { get; private set; } = string.Empty;
     public string Status { get; private set; } = Pending;
