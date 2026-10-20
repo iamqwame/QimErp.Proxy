@@ -85,3 +85,4 @@ __pycache__/
 
 !local-nuget/
 !local-nuget/*.nupkg
+!nuget.config
