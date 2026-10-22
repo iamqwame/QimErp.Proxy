@@ -13,3 +13,4 @@ jobs:
       sha: ${{ github.sha }}
       scope: proxy
     secrets: inherit
+
