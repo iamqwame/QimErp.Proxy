@@ -8,9 +8,26 @@ on:
 jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ON_PUSH == 'true'
-    uses: iamqwame/qimerp-infra/.github/workflows/deploy-backend.yml@main
-    with:
-      sha: ${{ github.sha }}
-      scope: proxy
-    secrets: inherit
+    runs-on: [self-hosted, qimerp-ci]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: iamqwame/qimerp-infra
+          ref: main
+          token: ${{ secrets.CHECKOUT_TOKEN }}
 
+      - name: Publish and activate proxy
+        env:
+          SHA: ${{ github.sha }}
+          SCOPE: proxy
+          SSH_KEY: ${{ secrets.BAREMETAL_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+          CHECKOUT_TOKEN: ${{ secrets.CHECKOUT_TOKEN }}
+        run: |
+          set -euo pipefail
+          mapfile -t services < <(awk -F '\t' '$2 == "proxy" && $1 !~ /^#/ { print $1 }' scripts/raw-catalogue.tsv)
+          [[ ${#services[@]} -gt 0 ]] || { echo "no proxy services in the catalogue" >&2; exit 1; }
+          for service in "${services[@]}"; do
+            SERVICE="$service" bash scripts/gha-bare-metal-one.sh
+          done
