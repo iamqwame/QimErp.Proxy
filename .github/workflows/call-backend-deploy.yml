@@ -17,17 +17,38 @@ jobs:
           ref: main
           token: ${{ secrets.CHECKOUT_TOKEN }}
 
-      - name: Publish and activate proxy
+      - name: Publish the proxy scope
         env:
-          SHA: ${{ github.sha }}
-          SCOPE: proxy
-          SSH_KEY: ${{ secrets.BAREMETAL_DEPLOY_SSH_KEY }}
+          CALLER_SHA: ${{ github.sha }}
+          CALLER_SCOPE: proxy
+          PUSH_ROUTE: ${{ vars.DEPLOY_ROUTE }}
+          BAREMETAL_SSH_KEY: ${{ secrets.BAREMETAL_DEPLOY_SSH_KEY }}
+          DOCKER_SSH_KEY: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
           CHECKOUT_TOKEN: ${{ secrets.CHECKOUT_TOKEN }}
         run: |
           set -euo pipefail
-          mapfile -t services < <(awk -F '\t' '$2 == "proxy" && $1 !~ /^#/ { print $1 }' scripts/raw-catalogue.tsv)
-          [[ ${#services[@]} -gt 0 ]] || { echo "no proxy services in the catalogue" >&2; exit 1; }
-          for service in "${services[@]}"; do
-            SERVICE="$service" bash scripts/gha-bare-metal-one.sh
-          done
+          export GITHUB_OUTPUT
+          GITHUB_OUTPUT="$(mktemp)"
+          bash scripts/resolve-backend-deploy.sh
+          route="$(sed -n 's/^route=//p' "$GITHUB_OUTPUT" | head -n 1)"
+          sha="$(sed -n 's/^sha=//p' "$GITHUB_OUTPUT" | head -n 1)"
+          services="$(awk 'f{if(/^EOF$/){exit} print} /^services<<EOF$/{f=1}' "$GITHUB_OUTPUT")"
+          case "$route" in
+            "Bare metal on the runtime box")
+              export SHA="$sha"
+              export SSH_KEY="${BAREMETAL_SSH_KEY}"
+              python3 -c 'import json,sys; print("\n".join(json.loads(sys.stdin.read())))' <<<"$services" |
+                while IFS= read -r service; do
+                  [[ -n "$service" ]] || continue
+                  SERVICE="$service" bash scripts/gha-bare-metal-one.sh
+                done
+              ;;
+            "Docker on the runtime box")
+              SSH_KEY="${DOCKER_SSH_KEY}" SERVICES="$services" bash scripts/gha-docker-deploy.sh
+              ;;
+            *)
+              echo "template returned an unknown route" >&2
+              exit 1
+              ;;
+          esac
