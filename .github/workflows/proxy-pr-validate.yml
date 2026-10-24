@@ -1,0 +1,68 @@
+name: PR Validation — Proxy API
+
+on:
+  pull_request:
+    branches: [development, main]
+    paths:
+      - 'src/Modules/**'
+      - 'Directory.*.props'
+      - 'local-nuget/**'
+      - 'nuget.config'
+      - '.github/scripts/**'
+      - '.github/workflows/proxy-pr-validate.yml'
+  push:
+    branches: [development]
+    paths:
+      - 'src/Modules/**'
+      - 'Directory.*.props'
+      - 'local-nuget/**'
+      - 'nuget.config'
+      - '.github/scripts/**'
+      - '.github/workflows/proxy-pr-validate.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qimerp-ci-proxy-pr-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Build & Test
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, qimerp-ci]
+    timeout-minutes: 45
+    env:
+      TZ: UTC
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      MSBUILDDISABLENODEREUSE: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install .NET 9 (user-local on Contabo)
+        run: |
+          set -euo pipefail
+          INSTALL_DIR="${HOME}/.dotnet"
+          has_sdk() { "${INSTALL_DIR}/dotnet" --list-sdks 2>/dev/null | grep '^9\.0\.' >/dev/null; }
+          if ! has_sdk; then
+            exec 9>"${HOME}/.dotnet-install.lock"
+            flock 9
+            if ! has_sdk; then
+              installer="$(mktemp -p "${RUNNER_TEMP}" dotnet-install.XXXXXX)"
+              curl -fsSL https://dot.net/v1/dotnet-install.sh -o "${installer}"
+              bash "${installer}" --channel 9.0 --install-dir "${INSTALL_DIR}"
+              rm -f "${installer}"
+            fi
+            flock -u 9
+          fi
+          echo "${INSTALL_DIR}" >> "${GITHUB_PATH}"
+          echo "DOTNET_ROOT=${INSTALL_DIR}" >> "${GITHUB_ENV}"
+          "${INSTALL_DIR}/dotnet" --info
+      - name: Test
+        run: |
+          set -euo pipefail
+          dotnet test src/Modules/Mobile/QimErp.Proxy.Mobile.WebApi.Tests/QimErp.Proxy.Mobile.WebApi.Tests.csproj -c Release -m:3 -nodeReuse:false -p:UseSharedCompilation=false
+      - name: Stop build servers
+        if: always()
+        run: dotnet build-server shutdown >/dev/null 2>&1 || true
