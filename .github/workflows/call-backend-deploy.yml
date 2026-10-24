@@ -1,0 +1,15 @@
+name: Call backend deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ON_PUSH == 'true'
+    uses: iamqwame/qimerp-infra/.github/workflows/deploy-backend.yml@main
+    with:
+      sha: ${{ github.sha }}
+      scope: proxy
+    secrets: inherit

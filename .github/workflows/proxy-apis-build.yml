@@ -112,7 +112,7 @@ jobs:
   build:
     name: Build & Push ${{ matrix.service }}
     needs: [changes, test]
-    if: needs.changes.outputs.matrix != '[]'
+    if: ${{ (needs.changes.outputs.matrix != '[]') && (github.event_name == 'workflow_dispatch' || vars.DEPLOY_ROUTE != 'Bare metal on the runtime box') }}
     runs-on: [self-hosted, qimerp-ci]
     timeout-minutes: 30
     strategy:
